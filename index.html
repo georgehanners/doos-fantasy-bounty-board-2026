@@ -628,7 +628,7 @@ function renderCards(){
     const result = hasData ? c.calc() : null;
     return `
       <div class="card" data-week="${c.week}">
-        <div class="stamp" style="${result?'':'opacity:0.4;'}">${result ? moneyFmt(BOUNTY_VALUE)+' CLAIMED' : moneyFmt(BOUNTY_VALUE)+' PENDING'}</div>
+        <div class="stamp" style="${result?'':'color:var(--dim);border-color:var(--dim);opacity:1;'}">${result ? moneyFmt(BOUNTY_VALUE)+' CLAIMED' : moneyFmt(BOUNTY_VALUE)+' PENDING'}</div>
         <div class="week display">${weekTag}</div>
         <h3 class="display">${c.emoji} ${c.title}</h3>
         <p class="condition">${c.condition}</p>
