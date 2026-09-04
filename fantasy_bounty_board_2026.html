@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pull it you doos — Weekly Bounty Board</title>
+<style>
+  :root{
+    --ink:#15120D;
+    --ink-2:#1E1A13;
+    --paper:#E9E1CC;
+    --paper-2:#DCD2B6;
+    --blood:#9C2B2B;
+    --blood-dark:#7A1F1F;
+    --mustard:#C99A2E;
+    --cream-text:#EFE8D8;
+    --dim:#8B8065;
+    --ink-text:#211C14;
+    --line:#5A5240;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--cream-text);
+    font-family:Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{
+    font-family:"Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", Arial, sans-serif;
+    font-weight:800;
+    letter-spacing:0.02em;
+  }
+  a{color:inherit;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:64px 24px 40px;
+    text-align:center;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(156,43,43,0.35), transparent 60%),
+      var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .hero .case-no{
+    display:inline-block;
+    font-family:"Courier New", monospace;
+    font-size:13px;
+    letter-spacing:0.18em;
+    color:var(--mustard);
+    border:1px solid var(--mustard);
+    padding:4px 12px;
+    border-radius:2px;
+    margin-bottom:22px;
+  }
+  .hero h1{
+    font-size:clamp(38px, 7vw, 76px);
+    margin:0 0 14px;
+    text-transform:uppercase;
+    line-height:0.98;
+    color:var(--cream-text);
+    text-shadow: 3px 3px 0 var(--blood-dark);
+  }
+  .hero p.subhead{
+    font-size:clamp(16px, 2.4vw, 22px);
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--mustard);
+    margin:0 0 16px;
+  }
+  .hero p.tag{
+    font-size:18px;
+    color:var(--dim);
+    max-width:560px;
+    margin:0 auto;
+    font-style:italic;
+  }
+  .hero .meta{
+    margin-top:26px;
+    font-family:"Courier New", monospace;
+    font-size:12.5px;
+    color:var(--dim);
+    letter-spacing:0.05em;
+  }
+
+  /* ---------- LEADERBOARD ---------- */
+  .standings-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14.5px;
+  }
+  .standings-table th{
+    text-align:left;
+    font-family:"Courier New", monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    color:var(--dim);
+    font-weight:400;
+    padding:6px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .standings-table td{
+    padding:8px 10px;
+    border-bottom:1px solid rgba(90,82,64,0.35);
+  }
+  .standings-table tr:hover td{background:rgba(156,43,43,0.08);}
+  .standings-table td.rank{color:var(--mustard); font-family:"Courier New", monospace;}
+  .standings-table td.num{font-family:"Courier New", monospace; color:var(--dim); text-align:right;}
+  .leaderboard{
+    max-width:980px;
+    margin:0 auto;
+    padding:40px 24px 10px;
+  }
+  .leaderboard h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    color:var(--mustard);
+    margin:0 0 14px;
+    font-family:"Courier New", monospace;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .pool-summary{
+    color:var(--dim);
+    font-size:12px;
+    letter-spacing:0.03em;
+    text-transform:none;
+  }
+  .lb-table td.money{
+    color:var(--mustard);
+    font-weight:700;
+    font-size:15.5px;
+  }
+  .lb-table td.wins-list{
+    font-family:"Courier New", monospace;
+    font-size:11.5px;
+    color:var(--dim);
+  }
+  .lb-table tr:first-child td{
+    color:var(--cream-text);
+  }
+  .lb-table tr:first-child td.money{
+    color:var(--mustard);
+    text-shadow:0 0 10px rgba(201,154,46,0.5);
+  }
+
+  /* ---------- BOARD ---------- */
+  .board{
+    max-width:1180px;
+    margin:0 auto;
+    padding:46px 24px 90px;
+  }
+  .board h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    color:var(--mustard);
+    margin:0 0 22px;
+    font-family:"Courier New", monospace;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));
+    gap:20px;
+  }
+
+  .card{
+    background:var(--paper);
+    color:var(--ink-text);
+    position:relative;
+    padding:22px 22px 24px;
+    clip-path:polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+    box-shadow:0 6px 0 rgba(0,0,0,0.35);
+    display:flex;
+    flex-direction:column;
+    min-height:210px;
+  }
+  .card .week{
+    font-family:"Courier New", monospace;
+    font-size:11.5px;
+    letter-spacing:0.1em;
+    color:var(--blood);
+    margin-bottom:6px;
+  }
+  .card h3{
+    font-size:22px;
+    margin:0 0 8px;
+    line-height:1.15;
+  }
+  .card .condition{
+    font-size:13.5px;
+    color:#4A4433;
+    margin:0 0 16px;
+    padding-bottom:14px;
+    border-bottom:1px dashed var(--line);
+  }
+  .card .winner-block{margin-top:auto;}
+  .card .winner-label{
+    font-family:"Courier New", monospace;
+    font-size:10.5px;
+    letter-spacing:0.14em;
+    color:var(--dim);
+    text-transform:uppercase;
+  }
+  .card .winner-name{
+    font-size:24px;
+    font-weight:700;
+    color:var(--blood-dark);
+    margin:2px 0 2px;
+    font-family: Georgia, serif;
+  }
+  .card .winner-stat{
+    font-size:14px;
+    color:#4A4433;
+  }
+  .card .stamp{
+    position:absolute;
+    top:16px;
+    right:16px;
+    font-family:"Courier New", monospace;
+    font-size:9.5px;
+    letter-spacing:0.08em;
+    color:var(--blood);
+    border:2px solid var(--blood);
+    padding:3px 8px;
+    border-radius:3px;
+    transform:rotate(6deg);
+    opacity:0.85;
+    white-space:nowrap;
+    background:rgba(233,225,204,0.6);
+  }
+  .card{padding-top:26px;}
+  .card h3{max-width:calc(100% - 70px);}
+
+  /* manual entry (week 9) */
+  .card.manual{background:var(--paper-2);}
+  .card.manual .winner-name{color:var(--dim); font-style:italic; font-size:16px;}
+  .card.manual input{
+    width:100%;
+    font-family:Georgia, serif;
+    font-size:18px;
+    padding:6px 4px;
+    border:none;
+    border-bottom:2px solid var(--blood);
+    background:transparent;
+    color:var(--ink-text);
+    margin-top:4px;
+  }
+  .card.manual input:focus{outline:none;}
+  .card.manual .save-note{
+    font-family:"Courier New", monospace;
+    font-size:10px;
+    color:var(--dim);
+    margin-top:8px;
+  }
+
+  footer{
+    text-align:center;
+    padding:30px 24px 50px;
+    color:var(--dim);
+    font-family:"Courier New", monospace;
+    font-size:11.5px;
+    letter-spacing:0.05em;
+  }
+
+  @media (max-width:600px){
+    .hero{padding:48px 18px 32px;}
+    .board,.leaderboard{padding-left:16px;padding-right:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="case-no">LEAGUE FILE NO. 51649810 — <span id="seasonYearText">2026</span> SEASON</div>
+  <h1 class="display">Pull it you doos</h1>
+  <p class="subhead display">Bounty Tracker</p>
+  <p class="tag">Fourteen weeks. Fourteen bounties. Every week counts.</p>
+  <div class="meta">STATUS: <span id="statusText">LOADING CASE DATA…</span></div>
+</div>
+
+<div class="leaderboard">
+  <h2>Bounty Leaderboard <span class="pool-summary" id="poolSummary"></span></h2>
+  <table class="standings-table lb-table">
+    <thead><tr>
+      <th>Rank</th><th>Team</th><th>Manager</th><th class="num">Bounties</th><th class="num">Earnings</th><th>Weeks Won</th>
+    </tr></thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+</div>
+
+<div class="board">
+  <h2>The Bounty Board</h2>
+  <div class="grid" id="cardGrid"></div>
+</div>
+
+<footer>
+  DATA SOURCE: ESPN FANTASY FOOTBALL · LEAGUE 51649810 · SEASON <span id="seasonYearFooter">2026</span><br>
+  Optimal-lineup and bench-points figures are computed live from raw roster data in this page.
+</footer>
+
+<script>
+/* =====================================================================
+   DATA
+   Bundled data below is the fallback/bootstrap dataset. On load, this
+   page checks shared persistent storage for a newer dataset (pushed by
+   Claude between seasons/weeks) and uses that instead if present — so
+   updating the numbers never requires re-issuing this file or its link.
+   ===================================================================== */
+const DEFAULT_SEASON_YEAR = 2026;
+const LEAGUE_ID = 51649810;
+const DEFAULT_TEAMS = [{"id": 1, "name": "Jenny Talia", "owner": "Juan van Zyl", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 2, "name": "Roux Le Roux", "owner": "Jaco le Roux", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 3, "name": "Masha Poos", "owner": "Mark Murray", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 4, "name": "LaMar a Lago", "owner": "Jarrod Murphy", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 5, "name": "Dixie Normous", "owner": "Warren Vickers", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 6, "name": "Team 4Leaf", "owner": "Philip Schwartz", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 7, "name": "Cherry Poppins", "owner": "George Hannington", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 8, "name": "Raleigh Rocco's Rushers", "owner": "Rocco DiLillo", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 9, "name": "Misty Fister", "owner": "Michael DiLillo", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}, {"id": 10, "name": "NY Bulldog", "owner": "Lakshan De Silva", "wins": 0, "losses": 0, "pointsFor": 0, "pointsAgainst": 0, "finalRank": null}];
+const DEFAULT_SCHEDULE = [{"week": 1, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 1, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 1, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 1, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 1, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 2, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 2, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 2, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 2, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 2, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 3, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 3, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 3, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 3, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 3, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 4, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 4, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 4, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 4, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 4, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 5, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 5, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 5, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 5, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 5, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 6, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 6, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 6, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 6, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 6, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 7, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 7, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 7, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 7, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 7, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 8, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 8, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 8, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 8, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 8, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 9, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 9, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 9, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 9, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 9, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 10, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 10, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 10, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 10, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 10, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 11, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 11, "homeTeamId": 9, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 11, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 8, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 11, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 11, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 12, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 12, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 12, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 12, "homeTeamId": 3, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 12, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 6, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 13, "homeTeamId": 7, "homeScore": 0, "awayTeamId": 10, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 13, "homeTeamId": 1, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 13, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 2, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 13, "homeTeamId": 5, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 13, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 4, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 14, "homeTeamId": 6, "homeScore": 0, "awayTeamId": 9, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 14, "homeTeamId": 8, "homeScore": 0, "awayTeamId": 5, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 14, "homeTeamId": 4, "homeScore": 0, "awayTeamId": 1, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 14, "homeTeamId": 2, "homeScore": 0, "awayTeamId": 7, "awayScore": 0, "winner": "UNDECIDED"}, {"week": 14, "homeTeamId": 10, "homeScore": 0, "awayTeamId": 3, "awayScore": 0, "winner": "UNDECIDED"}];
+const DEFAULT_ROSTERS = [];
+
+let SEASON_YEAR = DEFAULT_SEASON_YEAR;
+let TEAMS = DEFAULT_TEAMS;
+let SCHEDULE = DEFAULT_SCHEDULE;
+let ROSTERS = DEFAULT_ROSTERS;
+
+const BENCH_SLOTS = new Set([20,21]);
+const POS_LABEL = {1:'QB',2:'RB',3:'WR',4:'TE',5:'K',16:'D/ST'};
+let teamsById = Object.fromEntries(TEAMS.map(t=>[t.id,t]));
+
+const LIVE_DATA_KEY = 'live_season_data';
+
+async function loadLiveDataIfPresent(){
+  try{
+    const res = await window.storage.get(LIVE_DATA_KEY, true);
+    if(!res || !res.value) return false;
+    const live = JSON.parse(res.value);
+    if(!live || !live.teams || !live.schedule || !live.rosters) return false;
+    SEASON_YEAR = live.seasonYear;
+    TEAMS = live.teams;
+    SCHEDULE = live.schedule;
+    ROSTERS = live.rosters;
+    teamsById = Object.fromEntries(TEAMS.map(t=>[t.id,t]));
+    return true;
+  }catch(e){
+    return false; // storage unavailable or empty — silently use bundled defaults
+  }
+}
+
+
+/* ---------------------------------------------------------------------
+   Optimal lineup solver.
+   League roster shape: 1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX(RB/WR/TE), 1 D/ST, 1 K.
+   QB / D/ST / K never overlap with the RB-WR-TE-FLEX pool, so we solve
+   each independently (exact), then solve the 6-slot skill pool exactly
+   with a small subset-DP (roster pools are tiny, so this is instant).
+--------------------------------------------------------------------- */
+function bestSingle(players, slotId, used){
+  let best=null;
+  for(const p of players){
+    if(used.has(p.playerId)) continue;
+    if(p.eligibleSlots.includes(slotId) && (best===null || p.points>best.points)) best=p;
+  }
+  return best;
+}
+
+function solveSkillPool(pool){
+  // pool: players eligible for 2 (RB), 4 (WR), 6 (TE), or 23 (FLEX)
+  const slots = [2,2,4,4,6,23]; // 2 RB, 2 WR, 1 TE, 1 FLEX
+  const n = pool.length;
+  const memo = new Map();
+  function dp(i, mask){
+    if(i===slots.length) return 0;
+    const key = i*100000+mask;
+    if(memo.has(key)) return memo.get(key);
+    let best = 0; // allow leaving slot empty if truly no one eligible
+    for(let p=0;p<n;p++){
+      if(mask & (1<<p)) continue;
+      if(!pool[p].eligibleSlots.includes(slots[i])) continue;
+      const val = pool[p].points + dp(i+1, mask | (1<<p));
+      if(val>best) best=val;
+    }
+    const skip = dp(i+1, mask);
+    if(skip>best) best=skip;
+    memo.set(key,best);
+    return best;
+  }
+  return dp(0,0);
+}
+
+function optimalLineupTotal(players){
+  const used = new Set();
+  let total = 0;
+  const qb = bestSingle(players, 0, used);
+  if(qb){ total+=qb.points; used.add(qb.playerId); }
+  const dst = bestSingle(players, 16, used);
+  if(dst){ total+=dst.points; used.add(dst.playerId); }
+  const k = bestSingle(players, 17, used);
+  if(k){ total+=k.points; used.add(k.playerId); }
+  const skillPool = players.filter(p=>!used.has(p.playerId) &&
+    (p.eligibleSlots.includes(2)||p.eligibleSlots.includes(4)||p.eligibleSlots.includes(6)||p.eligibleSlots.includes(23)));
+  total += solveSkillPool(skillPool);
+  return total;
+}
+
+function actualStartedPoints(players){
+  return players.filter(p=>!BENCH_SLOTS.has(p.slotId)).reduce((s,p)=>s+p.points,0);
+}
+
+function rosterFor(week, teamId){
+  return ROSTERS.filter(r=>r.week===week && r.teamId===teamId);
+}
+function weeksAvailable(){
+  return [...new Set(ROSTERS.map(r=>r.week))].sort((a,b)=>a-b);
+}
+function scheduleFor(week){
+  return SCHEDULE.filter(m=>m.week===week);
+}
+
+/* ---------------------------------------------------------------------
+   Per-challenge compute functions. Each returns {winnerName, statLine}
+   or null if data for that week isn't loaded yet.
+--------------------------------------------------------------------- */
+function calcHighScore(week){
+  const games = scheduleFor(week);
+  if(!games.length) return null;
+  let best=null;
+  for(const m of games){
+    if(best===null||m.homeScore>best.score) best={teamId:m.homeTeamId, score:m.homeScore};
+    if(m.awayScore>best.score) best={teamId:m.awayTeamId, score:m.awayScore};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.score.toFixed(2)+' pts'};
+}
+function calcMargin(week, largest){
+  const games = scheduleFor(week);
+  if(!games.length) return null;
+  let best=null;
+  for(const m of games){
+    const margin = Math.abs(m.homeScore-m.awayScore);
+    const winnerId = m.homeScore>m.awayScore ? m.homeTeamId : m.awayTeamId;
+    if(best===null || (largest ? margin>best.margin : margin<best.margin)) best={teamId:winnerId, margin};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'margin of '+best.margin.toFixed(2)+' pts'};
+}
+function calcBenchWaste(week){
+  const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
+  if(!teamIds.length) return null;
+  let best=null;
+  for(const tid of teamIds){
+    const players = rosterFor(week, tid);
+    const opt = optimalLineupTotal(players);
+    const actual = actualStartedPoints(players);
+    const waste = opt-actual;
+    if(best===null||waste>best.waste) best={teamId:tid, waste, opt, actual};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.waste.toFixed(2)+' pts left on the bench'};
+}
+function calcTopStarter(week, posFilter){
+  const rows = ROSTERS.filter(r=>r.week===week && !BENCH_SLOTS.has(r.slotId) && (!posFilter||r.posId===posFilter));
+  if(!rows.length) return null;
+  const best = rows.reduce((a,b)=>b.points>a.points?b:a);
+  return {teamId:best.teamId, winnerName:best.name+' ('+teamsById[best.teamId].name+')', statLine:best.points.toFixed(2)+' pts'};
+}
+function calcUglyWin(week){
+  const games = scheduleFor(week);
+  if(!games.length) return null;
+  let best=null;
+  for(const m of games){
+    const winScore = m.homeScore>m.awayScore ? m.homeScore : m.awayScore;
+    const winnerId = m.homeScore>m.awayScore ? m.homeTeamId : m.awayTeamId;
+    if(best===null||winScore<best.score) best={teamId:winnerId, score:winScore};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'won with just '+best.score.toFixed(2)+' pts'};
+}
+function calcUnluckyLoss(week){
+  const games = scheduleFor(week);
+  if(!games.length) return null;
+  let best=null;
+  for(const m of games){
+    const loseScore = m.homeScore<m.awayScore ? m.homeScore : m.awayScore;
+    const loserId = m.homeScore<m.awayScore ? m.homeTeamId : m.awayTeamId;
+    if(best===null||loseScore>best.score) best={teamId:loserId, score:loseScore};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'lost despite '+best.score.toFixed(2)+' pts'};
+}
+function calcOneManArmy(week){
+  const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
+  if(!teamIds.length) return null;
+  let best=null;
+  for(const tid of teamIds){
+    const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
+    const teamTotal = st.reduce((s,p)=>s+p.points,0);
+    if(teamTotal<=0) continue;
+    const top = st.reduce((a,b)=>b.points>a.points?b:a);
+    const share = top.points/teamTotal*100;
+    if(best===null||share>best.share) best={teamId:tid, share, player:top, teamTotal};
+  }
+  if(!best) return null;
+  return {teamId:best.teamId, winnerName:best.player.name+' ('+teamsById[best.teamId].name+')',
+    statLine:best.share.toFixed(1)+'% of team\'s '+best.teamTotal.toFixed(2)+' pts'};
+}
+function calcCommitteeRules(week){
+  const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
+  if(!teamIds.length) return null;
+  let best=null;
+  for(const tid of teamIds){
+    const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
+    const pts = st.map(p=>p.points);
+    const spread = Math.max(...pts)-Math.min(...pts);
+    if(best===null||spread<best.spread) best={teamId:tid, spread};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'only '+best.spread.toFixed(2)+' pts between top and bottom starter'};
+}
+function calcLooseChange(week){
+  const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
+  if(!teamIds.length) return null;
+  let best=null;
+  for(const tid of teamIds){
+    const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
+    const dst = st.filter(p=>p.posId===16).reduce((s,p)=>s+p.points,0);
+    const k = st.filter(p=>p.posId===5).reduce((s,p)=>s+p.points,0);
+    const combined = dst+k;
+    if(best===null||combined>best.combined) best={teamId:tid, combined, dst, k};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name,
+    statLine:'DEF+K combined for '+best.combined.toFixed(2)+' pts ('+best.dst.toFixed(1)+' + '+best.k.toFixed(1)+')'};
+}
+function calcTheUpset(week){
+  const games = scheduleFor(week);
+  if(!games.length) return null;
+  const matchupInfo = [];
+  for(const m of games){
+    const hStarters = ROSTERS.filter(r=>r.week===week && r.teamId===m.homeTeamId && !BENCH_SLOTS.has(r.slotId));
+    const aStarters = ROSTERS.filter(r=>r.week===week && r.teamId===m.awayTeamId && !BENCH_SLOTS.has(r.slotId));
+    const hProj = hStarters.reduce((s,p)=>s+(p.projected||0),0);
+    const aProj = aStarters.reduce((s,p)=>s+(p.projected||0),0);
+    let underdog, favorite, underdogActual, favoriteActual, projGap;
+    if(hProj<=aProj){
+      underdog=m.homeTeamId; favorite=m.awayTeamId; underdogActual=m.homeScore; favoriteActual=m.awayScore; projGap=aProj-hProj;
+    } else {
+      underdog=m.awayTeamId; favorite=m.homeTeamId; underdogActual=m.awayScore; favoriteActual=m.homeScore; projGap=hProj-aProj;
+    }
+    matchupInfo.push({underdog, favorite, projGap, underdogWon: underdogActual>favoriteActual, actualMargin: underdogActual-favoriteActual});
+  }
+  const upsets = matchupInfo.filter(m=>m.underdogWon);
+  if(upsets.length){
+    const best = upsets.reduce((a,b)=>b.projGap>a.projGap?b:a);
+    return {teamId:best.underdog, winnerName:teamsById[best.underdog].name,
+      statLine:'won as a '+best.projGap.toFixed(2)+'-pt underdog'};
+  }
+  // no upset happened — fall back to the closest an underdog came (smallest loss margin)
+  const closest = matchupInfo.reduce((a,b)=>b.actualMargin>a.actualMargin?b:a);
+  return {teamId:closest.underdog, winnerName:teamsById[closest.underdog].name,
+    statLine:'no upset this week — lost by '+(-closest.actualMargin).toFixed(2)+' as a '+closest.projGap.toFixed(2)+'-pt underdog'};
+}
+function calcBeatTheBook(week){
+  const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
+  if(!teamIds.length) return null;
+  let best=null;
+  for(const tid of teamIds){
+    const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
+    const actual = st.reduce((s,p)=>s+p.points,0);
+    const proj = st.reduce((s,p)=>s+(p.projected||0),0);
+    const diff = actual-proj;
+    if(best===null||diff>best.diff) best={teamId:tid, diff, actual, proj};
+  }
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name,
+    statLine:'beat projection by '+best.diff.toFixed(2)+' pts (actual '+best.actual.toFixed(1)+' vs proj '+best.proj.toFixed(1)+')'};
+}
+
+const BOUNTY_VALUE = 25;
+
+/* Returns [{week, title, teamId}] for every bounty decided so far
+   (i.e. every week whose data has been loaded). */
+function getDecidedBounties(){
+  const decided = [];
+  const weeksLoaded = new Set(weeksAvailable());
+  for(const c of CHALLENGES){
+    if(!weeksLoaded.has(c.week)) continue; // no real data for this week yet — don't count it
+    const result = c.calc();
+    if(result) decided.push({week:c.week, title:c.title, teamId:result.teamId});
+  }
+  return decided;
+}
+
+function computeLeaderboard(){
+  const decided = getDecidedBounties();
+  const tally = new Map(); // teamId -> {wins:[{week,title}], total}
+  for(const t of TEAMS) tally.set(t.id, {team:t, wins:[], total:0});
+  for(const d of decided){
+    const row = tally.get(d.teamId);
+    if(!row) continue;
+    row.wins.push({week:d.week, title:d.title});
+    row.total += BOUNTY_VALUE;
+  }
+  const rows = [...tally.values()].sort((a,b)=> b.total-a.total || a.team.name.localeCompare(b.team.name));
+  return {rows, decidedCount:decided.length};
+}
+
+const CHALLENGES = [
+  {week:1, emoji:'🏆', title:'Opening Statement', condition:'Highest total team score', calc:()=>calcHighScore(1)},
+  {week:2, emoji:'🚀', title:'Nuclear Performance', condition:'Highest-scoring individual starter, any position', calc:()=>calcTopStarter(2)},
+  {week:3, emoji:'🗑️', title:'Ugly Win', condition:'Lowest-scoring team that still wins', calc:()=>calcUglyWin(3)},
+  {week:4, emoji:'🔫', title:'Gunslinger', condition:'Highest-scoring starting QB', calc:()=>calcTopStarter(4,1)},
+  {week:5, emoji:'🪑', title:'Shoulda Started Him', condition:'Most points left on the bench (optimal vs. actual lineup)', calc:()=>calcBenchWaste(5)},
+  {week:6, emoji:'😭', title:'Unluckiest Bastard', condition:'Highest-scoring team that loses', calc:()=>calcUnluckyLoss(6)},
+  {week:7, emoji:'🎙️', title:'New Heights', condition:'Highest-scoring starting TE', calc:()=>calcTopStarter(7,4)},
+  {week:8, emoji:'💪', title:'One-Man Army', condition:'Largest share of a team\'s total score from one player', calc:()=>calcOneManArmy(8)},
+  {week:9, emoji:'🤝', title:'Committee Rules', condition:'Most balanced lineup (smallest spread between top and bottom starter)', calc:()=>calcCommitteeRules(9)},
+  {week:10, emoji:'🪙', title:'Loose Change', condition:'Highest combined DEF + K score (starters)', calc:()=>calcLooseChange(10)},
+  {week:11, emoji:'🐴', title:'The Upset', condition:'Biggest underdog (by projection) who still won — or, if no underdog won, the closest one came', calc:()=>calcTheUpset(11)},
+  {week:12, emoji:'☠️', title:'Thanksgiving Massacre', condition:'Largest margin of victory', calc:()=>calcMargin(12,true)},
+  {week:13, emoji:'📈', title:'Beat the Book', condition:'Largest aggregate points scored above starting lineup\'s projection', calc:()=>calcBeatTheBook(13)},
+  {week:14, emoji:'😅', title:'Survive & Advance', condition:'Smallest margin of victory', calc:()=>calcMargin(14,false)},
+];
+
+/* ---------------------------------------------------------------------
+   Render
+--------------------------------------------------------------------- */
+function moneyFmt(n){ return '$'+n.toLocaleString('en-US'); }
+
+function renderCards(){
+  const grid = document.getElementById('cardGrid');
+  const weeksLoaded = new Set(weeksAvailable());
+
+  const cardsHtml = CHALLENGES.map(c=>{
+    const weekTag = 'WEEK '+String(c.week).padStart(2,'0');
+    const hasData = weeksLoaded.has(c.week);
+    const result = hasData ? c.calc() : null;
+    return `
+      <div class="card" data-week="${c.week}">
+        <div class="stamp" style="${result?'':'opacity:0.4;'}">${result ? moneyFmt(BOUNTY_VALUE)+' CLAIMED' : moneyFmt(BOUNTY_VALUE)+' PENDING'}</div>
+        <div class="week display">${weekTag}</div>
+        <h3 class="display">${c.emoji} ${c.title}</h3>
+        <p class="condition">${c.condition}</p>
+        <div class="winner-block">
+          <div class="winner-label">Winner</div>
+          ${result ? `
+            <div class="winner-name">${result.winnerName}</div>
+            <div class="winner-stat">${result.statLine}</div>
+          ` : `<div class="winner-name" style="color:var(--dim);font-size:16px;font-style:italic;">Awaiting week ${c.week} data</div>`}
+        </div>
+      </div>`;
+  }).join('');
+  grid.innerHTML = cardsHtml;
+}
+
+function renderLeaderboard(){
+  const {rows, decidedCount} = computeLeaderboard();
+  const pool = CHALLENGES.length * BOUNTY_VALUE;
+  const claimed = decidedCount * BOUNTY_VALUE;
+
+  document.getElementById('poolSummary').textContent =
+    `${moneyFmt(pool)} total pool  ·  ${moneyFmt(claimed)} claimed  ·  ${moneyFmt(pool-claimed)} still up for grabs`;
+
+  const body = document.getElementById('leaderboardBody');
+  body.innerHTML = rows.map((r,i)=>`
+    <tr>
+      <td class="rank">#${i+1}</td>
+      <td>${r.team.name}</td>
+      <td>${r.team.owner}</td>
+      <td class="num">${r.wins.length}</td>
+      <td class="num money">${moneyFmt(r.total)}</td>
+      <td class="wins-list">${r.wins.map(w=>'Wk'+w.week).join(', ') || '—'}</td>
+    </tr>`).join('');
+  return decidedCount;
+}
+
+(async function init(){
+  await loadLiveDataIfPresent();
+  document.getElementById('seasonYearText').textContent = SEASON_YEAR;
+  document.getElementById('seasonYearFooter').textContent = SEASON_YEAR;
+  renderCards();
+  const decidedCount = renderLeaderboard();
+  const remainingCount = CHALLENGES.length - decidedCount;
+  document.getElementById('statusText').textContent =
+    `${decidedCount} bounties issued (${moneyFmt(decidedCount*BOUNTY_VALUE)}) · ${remainingCount} remaining (${moneyFmt(remainingCount*BOUNTY_VALUE)})`;
+})();
+</script>
+</body>
+</html>
