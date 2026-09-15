@@ -218,6 +218,13 @@
     font-size:14px;
     color:#5C4E6E;
   }
+  .card .runner-up{
+    font-size:11.5px;
+    color:var(--dim);
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid rgba(107,84,128,0.25);
+  }
   .card .stamp{
     position:absolute;
     top:16px;
@@ -269,8 +276,48 @@
   }
 
   @media (max-width:600px){
-    .hero{padding:48px 18px 32px;}
-    .board,.leaderboard{padding-left:16px;padding-right:16px;}
+    .hero{padding:40px 16px 28px;}
+    .board,.leaderboard{padding-left:14px;padding-right:14px;}
+    .grid{grid-template-columns:1fr;}
+    .card{padding:20px 18px 22px;}
+
+    /* Leaderboard table -> stacked cards. Each row becomes a small card;
+       each cell shows its column label (from data-label) above the value
+       instead of relying on table columns that don't fit a phone screen. */
+    .lb-table thead{display:none;}
+    .lb-table, .lb-table tbody, .lb-table tr, .lb-table td{display:block; width:100%;}
+    .lb-table tr{
+      border:1px solid var(--line);
+      border-radius:4px;
+      padding:10px 12px;
+      margin-bottom:10px;
+      background:rgba(255,255,255,0.02);
+    }
+    .lb-table td{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      padding:4px 0;
+      border-bottom:none;
+      text-align:right;
+    }
+    .lb-table td::before{
+      content:attr(data-label);
+      font-family:"Courier New", monospace;
+      font-size:10.5px;
+      letter-spacing:0.06em;
+      color:var(--dim);
+      text-align:left;
+    }
+    .lb-table td.rank::before{content:none;}
+    .lb-table td.rank{
+      font-size:15px;
+      justify-content:flex-start;
+      padding-bottom:6px;
+      border-bottom:1px dashed rgba(107,84,128,0.35);
+      margin-bottom:4px;
+    }
+    .lb-table td.wins-list{justify-content:space-between;}
   }
 </style>
 </head>
@@ -423,106 +470,122 @@ function scheduleFor(week){
 function calcHighScore(week){
   const games = scheduleFor(week);
   if(!games.length) return null;
-  let best=null;
+  const entries = [];
   for(const m of games){
-    if(best===null||m.homeScore>best.score) best={teamId:m.homeTeamId, score:m.homeScore};
-    if(m.awayScore>best.score) best={teamId:m.awayTeamId, score:m.awayScore};
+    entries.push({teamId:m.homeTeamId, score:m.homeScore});
+    entries.push({teamId:m.awayTeamId, score:m.awayScore});
   }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.score.toFixed(2)+' pts'};
+  entries.sort((a,b)=>b.score-a.score);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.score.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:second.score.toFixed(2)+' pts'} : null};
 }
 function calcMargin(week, largest){
   const games = scheduleFor(week);
   if(!games.length) return null;
-  let best=null;
-  for(const m of games){
+  const entries = games.map(m=>{
     const margin = Math.abs(m.homeScore-m.awayScore);
     const winnerId = m.homeScore>m.awayScore ? m.homeTeamId : m.awayTeamId;
-    if(best===null || (largest ? margin>best.margin : margin<best.margin)) best={teamId:winnerId, margin};
-  }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'margin of '+best.margin.toFixed(2)+' pts'};
+    return {teamId:winnerId, margin};
+  });
+  entries.sort((a,b)=> largest ? b.margin-a.margin : a.margin-b.margin);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'margin of '+best.margin.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'margin of '+second.margin.toFixed(2)+' pts'} : null};
 }
 function calcBenchWaste(week){
   const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
   if(!teamIds.length) return null;
-  let best=null;
-  for(const tid of teamIds){
+  const entries = teamIds.map(tid=>{
     const players = rosterFor(week, tid);
     const opt = optimalLineupTotal(players);
     const actual = actualStartedPoints(players);
-    const waste = opt-actual;
-    if(best===null||waste>best.waste) best={teamId:tid, waste, opt, actual};
-  }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.waste.toFixed(2)+' pts left on the bench'};
+    return {teamId:tid, waste: opt-actual};
+  });
+  entries.sort((a,b)=>b.waste-a.waste);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:best.waste.toFixed(2)+' pts left on the bench',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:second.waste.toFixed(2)+' pts left on the bench'} : null};
 }
 function calcTopStarter(week, posFilter){
   const rows = ROSTERS.filter(r=>r.week===week && !BENCH_SLOTS.has(r.slotId) && (!posFilter||r.posId===posFilter));
   if(!rows.length) return null;
-  const best = rows.reduce((a,b)=>b.points>a.points?b:a);
-  return {teamId:best.teamId, winnerName:best.name+' ('+teamsById[best.teamId].name+')', statLine:best.points.toFixed(2)+' pts'};
+  const sorted = [...rows].sort((a,b)=>b.points-a.points);
+  const best=sorted[0], second=sorted[1];
+  return {teamId:best.teamId, winnerName:best.name+' ('+teamsById[best.teamId].name+')', statLine:best.points.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:second.name+' ('+teamsById[second.teamId].name+')', statLine:second.points.toFixed(2)+' pts'} : null};
 }
 function calcUglyWin(week){
   const games = scheduleFor(week);
   if(!games.length) return null;
-  let best=null;
-  for(const m of games){
+  const entries = games.map(m=>{
     const winScore = m.homeScore>m.awayScore ? m.homeScore : m.awayScore;
     const winnerId = m.homeScore>m.awayScore ? m.homeTeamId : m.awayTeamId;
-    if(best===null||winScore<best.score) best={teamId:winnerId, score:winScore};
-  }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'won with just '+best.score.toFixed(2)+' pts'};
+    return {teamId:winnerId, score:winScore};
+  });
+  entries.sort((a,b)=>a.score-b.score);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'won with just '+best.score.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'won with just '+second.score.toFixed(2)+' pts'} : null};
 }
 function calcUnluckyLoss(week){
   const games = scheduleFor(week);
   if(!games.length) return null;
-  let best=null;
-  for(const m of games){
+  const entries = games.map(m=>{
     const loseScore = m.homeScore<m.awayScore ? m.homeScore : m.awayScore;
     const loserId = m.homeScore<m.awayScore ? m.homeTeamId : m.awayTeamId;
-    if(best===null||loseScore>best.score) best={teamId:loserId, score:loseScore};
-  }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'lost despite '+best.score.toFixed(2)+' pts'};
+    return {teamId:loserId, score:loseScore};
+  });
+  entries.sort((a,b)=>b.score-a.score);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'lost despite '+best.score.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'lost despite '+second.score.toFixed(2)+' pts'} : null};
 }
 function calcOneManArmy(week){
   const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
   if(!teamIds.length) return null;
-  let best=null;
+  const entries = [];
   for(const tid of teamIds){
     const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
     const teamTotal = st.reduce((s,p)=>s+p.points,0);
     if(teamTotal<=0) continue;
     const top = st.reduce((a,b)=>b.points>a.points?b:a);
-    const share = top.points/teamTotal*100;
-    if(best===null||share>best.share) best={teamId:tid, share, player:top, teamTotal};
+    entries.push({teamId:tid, share: top.points/teamTotal*100, player:top, teamTotal});
   }
-  if(!best) return null;
+  if(!entries.length) return null;
+  entries.sort((a,b)=>b.share-a.share);
+  const best=entries[0], second=entries[1];
   return {teamId:best.teamId, winnerName:best.player.name+' ('+teamsById[best.teamId].name+')',
-    statLine:best.share.toFixed(1)+'% of team\'s '+best.teamTotal.toFixed(2)+' pts'};
+    statLine:best.share.toFixed(1)+'% of team\'s '+best.teamTotal.toFixed(2)+' pts',
+    runnerUp: second ? {teamId:second.teamId, name:second.player.name+' ('+teamsById[second.teamId].name+')', statLine:second.share.toFixed(1)+'% of team\'s '+second.teamTotal.toFixed(2)+' pts'} : null};
 }
 function calcCommitteeRules(week){
   const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
   if(!teamIds.length) return null;
-  let best=null;
-  for(const tid of teamIds){
+  const entries = teamIds.map(tid=>{
     const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
     const pts = st.map(p=>p.points);
-    const spread = Math.max(...pts)-Math.min(...pts);
-    if(best===null||spread<best.spread) best={teamId:tid, spread};
-  }
-  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'only '+best.spread.toFixed(2)+' pts between top and bottom starter'};
+    return {teamId:tid, spread: Math.max(...pts)-Math.min(...pts)};
+  });
+  entries.sort((a,b)=>a.spread-b.spread);
+  const best=entries[0], second=entries[1];
+  return {teamId:best.teamId, winnerName:teamsById[best.teamId].name, statLine:'only '+best.spread.toFixed(2)+' pts between top and bottom starter',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'only '+second.spread.toFixed(2)+' pts between top and bottom starter'} : null};
 }
 function calcLooseChange(week){
   const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
   if(!teamIds.length) return null;
-  let best=null;
-  for(const tid of teamIds){
+  const entries = teamIds.map(tid=>{
     const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
     const dst = st.filter(p=>p.posId===16).reduce((s,p)=>s+p.points,0);
     const k = st.filter(p=>p.posId===5).reduce((s,p)=>s+p.points,0);
-    const combined = dst+k;
-    if(best===null||combined>best.combined) best={teamId:tid, combined, dst, k};
-  }
+    return {teamId:tid, combined: dst+k, dst, k};
+  });
+  entries.sort((a,b)=>b.combined-a.combined);
+  const best=entries[0], second=entries[1];
   return {teamId:best.teamId, winnerName:teamsById[best.teamId].name,
-    statLine:'DEF+K combined for '+best.combined.toFixed(2)+' pts ('+best.dst.toFixed(1)+' + '+best.k.toFixed(1)+')'};
+    statLine:'DEF+K combined for '+best.combined.toFixed(2)+' pts ('+best.dst.toFixed(1)+' + '+best.k.toFixed(1)+')',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'DEF+K combined for '+second.combined.toFixed(2)+' pts ('+second.dst.toFixed(1)+' + '+second.k.toFixed(1)+')'} : null};
 }
 function calcTheUpset(week){
   const games = scheduleFor(week);
@@ -541,30 +604,33 @@ function calcTheUpset(week){
     }
     matchupInfo.push({underdog, favorite, projGap, underdogWon: underdogActual>favoriteActual, actualMargin: underdogActual-favoriteActual});
   }
-  const upsets = matchupInfo.filter(m=>m.underdogWon);
+  const upsets = matchupInfo.filter(m=>m.underdogWon).sort((a,b)=>b.projGap-a.projGap);
   if(upsets.length){
-    const best = upsets.reduce((a,b)=>b.projGap>a.projGap?b:a);
-    return {teamId:best.underdog, winnerName:teamsById[best.underdog].name,
-      statLine:'won as a '+best.projGap.toFixed(2)+'-pt underdog'};
+    const best=upsets[0], second=upsets[1];
+    return {teamId:best.underdog, winnerName:teamsById[best.underdog].name, statLine:'won as a '+best.projGap.toFixed(2)+'-pt underdog',
+      runnerUp: second ? {teamId:second.underdog, name:teamsById[second.underdog].name, statLine:'won as a '+second.projGap.toFixed(2)+'-pt underdog'} : null};
   }
   // no upset happened — fall back to the closest an underdog came (smallest loss margin)
-  const closest = matchupInfo.reduce((a,b)=>b.actualMargin>a.actualMargin?b:a);
-  return {teamId:closest.underdog, winnerName:teamsById[closest.underdog].name,
-    statLine:'no upset this week — lost by '+(-closest.actualMargin).toFixed(2)+' as a '+closest.projGap.toFixed(2)+'-pt underdog'};
+  const closestSorted = [...matchupInfo].sort((a,b)=>b.actualMargin-a.actualMargin);
+  const best=closestSorted[0], second=closestSorted[1];
+  return {teamId:best.underdog, winnerName:teamsById[best.underdog].name,
+    statLine:'no upset this week — lost by '+(-best.actualMargin).toFixed(2)+' as a '+best.projGap.toFixed(2)+'-pt underdog',
+    runnerUp: second ? {teamId:second.underdog, name:teamsById[second.underdog].name, statLine:'lost by '+(-second.actualMargin).toFixed(2)+' as a '+second.projGap.toFixed(2)+'-pt underdog'} : null};
 }
 function calcBeatTheBook(week){
   const teamIds = [...new Set(ROSTERS.filter(r=>r.week===week).map(r=>r.teamId))];
   if(!teamIds.length) return null;
-  let best=null;
-  for(const tid of teamIds){
+  const entries = teamIds.map(tid=>{
     const st = ROSTERS.filter(r=>r.week===week && r.teamId===tid && !BENCH_SLOTS.has(r.slotId));
     const actual = st.reduce((s,p)=>s+p.points,0);
     const proj = st.reduce((s,p)=>s+(p.projected||0),0);
-    const diff = actual-proj;
-    if(best===null||diff>best.diff) best={teamId:tid, diff, actual, proj};
-  }
+    return {teamId:tid, diff: actual-proj, actual, proj};
+  });
+  entries.sort((a,b)=>b.diff-a.diff);
+  const best=entries[0], second=entries[1];
   return {teamId:best.teamId, winnerName:teamsById[best.teamId].name,
-    statLine:'beat projection by '+best.diff.toFixed(2)+' pts (actual '+best.actual.toFixed(1)+' vs proj '+best.proj.toFixed(1)+')'};
+    statLine:'beat projection by '+best.diff.toFixed(2)+' pts (actual '+best.actual.toFixed(1)+' vs proj '+best.proj.toFixed(1)+')',
+    runnerUp: second ? {teamId:second.teamId, name:teamsById[second.teamId].name, statLine:'beat projection by '+second.diff.toFixed(2)+' pts (actual '+second.actual.toFixed(1)+' vs proj '+second.proj.toFixed(1)+')'} : null};
 }
 
 const BOUNTY_VALUE = 25;
@@ -637,6 +703,9 @@ function renderCards(){
           ${result ? `
             <div class="winner-name">${result.winnerName}</div>
             <div class="winner-stat">${result.statLine}</div>
+            ${result.runnerUp ? `
+              <div class="runner-up">Runner-up: ${result.runnerUp.name} — ${result.runnerUp.statLine}</div>
+            ` : ''}
           ` : `<div class="winner-name" style="color:var(--dim);font-size:16px;font-style:italic;">Awaiting week ${c.week} data</div>`}
         </div>
       </div>`;
@@ -655,12 +724,12 @@ function renderLeaderboard(){
   const body = document.getElementById('leaderboardBody');
   body.innerHTML = rows.map((r,i)=>`
     <tr>
-      <td class="rank">#${i+1}</td>
-      <td>${r.team.name}</td>
-      <td>${r.team.owner}</td>
-      <td class="num">${r.wins.length}</td>
-      <td class="num money">${moneyFmt(r.total)}</td>
-      <td class="wins-list">${r.wins.map(w=>'Wk'+w.week).join(', ') || '—'}</td>
+      <td class="rank" data-label="Rank">#${i+1}</td>
+      <td data-label="Team">${r.team.name}</td>
+      <td data-label="Manager">${r.team.owner}</td>
+      <td class="num" data-label="Bounties">${r.wins.length}</td>
+      <td class="num money" data-label="Earnings">${moneyFmt(r.total)}</td>
+      <td class="wins-list" data-label="Weeks Won">${r.wins.map(w=>'Wk'+w.week).join(', ') || '—'}</td>
     </tr>`).join('');
   return decidedCount;
 }
